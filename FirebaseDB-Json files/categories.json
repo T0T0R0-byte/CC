@@ -1,0 +1,12 @@
+[
+  { "id": "category_01", "name": "Art" },
+  { "id": "category_02", "name": "Music" },
+  { "id": "category_03", "name": "Technology" },
+  { "id": "category_04", "name": "Cooking" },
+  { "id": "category_05", "name": "Sports" },
+  { "id": "category_06", "name": "Photography" },
+  { "id": "category_07", "name": "Dance" },
+  { "id": "category_08", "name": "Fitness" },
+  { "id": "category_09", "name": "Baking" },
+  { "id": "category_10", "name": "Business" }
+]

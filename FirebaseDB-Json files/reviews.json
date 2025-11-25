@@ -1,0 +1,18 @@
+[
+  {
+    "id": "review_01",
+    "workshopId": "workshop_01",
+    "userId": "user_03",
+    "rating": 5,
+    "comment": "Amazing workshop!",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "review_02",
+    "workshopId": "workshop_02",
+    "userId": "user_04",
+    "rating": 4,
+    "comment": "Very helpful.",
+    "createdAt": "SERVER_TIMESTAMP"
+  }
+]

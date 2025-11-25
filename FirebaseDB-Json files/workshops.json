@@ -1,0 +1,44 @@
+[
+  {
+    "id": "workshop_01",
+    "vendorId": "vendor_01",
+    "title": "Digital Art Basics",
+    "description": "Learn drawing & shading.",
+    "price": 3500,
+    "category": "Art",
+    "location": "Colombo",
+    "ageGroup": "Teens",
+    "imageUrl": "",
+    "rating": 4.8,
+    "date": "2025-12-10",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "workshop_02",
+    "vendorId": "vendor_02",
+    "title": "Python Bootcamp",
+    "description": "Learn Python in 3 weeks.",
+    "price": 18000,
+    "category": "Technology",
+    "location": "Jaffna",
+    "ageGroup": "Adults",
+    "imageUrl": "",
+    "rating": 4.9,
+    "date": "2025-11-28",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "workshop_03",
+    "vendorId": "vendor_03",
+    "title": "Watercolor Masterclass",
+    "description": "Learn watercolor skills.",
+    "price": 4200,
+    "category": "Art",
+    "location": "Galle",
+    "ageGroup": "Kids",
+    "imageUrl": "",
+    "rating": 4.7,
+    "date": "2025-12-05",
+    "createdAt": "SERVER_TIMESTAMP"
+  }
+]

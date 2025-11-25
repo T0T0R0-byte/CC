@@ -1,0 +1,63 @@
+[
+  {
+    "id": "vendor_01",
+    "name": "Colombo Creative Studio",
+    "email": "vendor01@vibe.com",
+    "phone": "0771234567",
+    "bio": "We teach art and creative workshops.",
+    "location": "Colombo",
+    "profileImage": "",
+    "role": "vendor",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "vendor_02",
+    "name": "Jaffna Tech Academy",
+    "email": "vendor02@vibe.com",
+    "phone": "0765482211",
+    "bio": "Coding and tech bootcamps.",
+    "location": "Jaffna",
+    "profileImage": "",
+    "role": "vendor",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "vendor_03",
+    "name": "Galle Art House",
+    "email": "vendor03@vibe.com",
+    "phone": "0752245566",
+    "bio": "Art and creative design workshops.",
+    "location": "Galle",
+    "profileImage": "",
+    "role": "vendor",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "vendor_04",
+    "name": "Kandy Music Lab",
+    "email": "vendor04@vibe.com",
+    "phone": "0779988776",
+    "bio": "Learn musical instruments easily.",
+    "location": "Kandy",
+    "role": "vendor",
+    "profileImage": "",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+  {
+    "id": "vendor_05",
+    "name": "Colombo Coding School",
+    "email": "vendor05@vibe.com",
+    "phone": "0771122334",
+    "bio": "Software engineering & robotics.",
+    "location": "Colombo",
+    "role": "vendor",
+    "profileImage": "",
+    "createdAt": "SERVER_TIMESTAMP"
+  },
+
+  { "id": "user_01", "name": "Nethan", "email": "user01@vibe.com", "role": "user", "createdAt": "SERVER_TIMESTAMP" },
+  { "id": "user_02", "name": "Inesh", "email": "user02@vibe.com", "role": "user", "createdAt": "SERVER_TIMESTAMP" },
+  { "id": "user_03", "name": "Tony", "email": "user03@vibe.com", "role": "user", "createdAt": "SERVER_TIMESTAMP" },
+  { "id": "user_04", "name": "Lihini", "email": "user04@vibe.com", "role": "user", "createdAt": "SERVER_TIMESTAMP" },
+  { "id": "user_05", "name": "Maya", "email": "user05@vibe.com", "role": "user", "createdAt": "SERVER_TIMESTAMP" }
+]
