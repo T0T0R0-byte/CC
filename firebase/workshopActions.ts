@@ -154,7 +154,13 @@ const fileToBase64 = (file: File): Promise<string> => {
 export const registerForWorkshop = async (
   workshopId: string,
   userId: string,
-  receiptFile: File | null
+  receiptFile: File | null,
+  participantDetails: {
+    fullName: string;
+    age: string;
+    phone: string;
+    address: string;
+  }
 ) => {
   console.log("registerForWorkshop: Starting...");
   let receiptUrl = "";
@@ -205,6 +211,7 @@ export const registerForWorkshop = async (
     status: "pending", // Vendor can approve later
     createdAt: serverTimestamp(),
     consentAccepted: true,
+    participantDetails, // Save participant details
   });
 
   // Update User's Registered Workshops (for UI check)

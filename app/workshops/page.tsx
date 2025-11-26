@@ -28,7 +28,8 @@ interface Workshop {
 
 interface Vendor {
   id: string;
-  name: string;
+  displayName: string;
+  businessName?: string;
 }
 
 function WorkshopsPage() {
@@ -44,7 +45,6 @@ function WorkshopsPage() {
   const [priceRange, setPriceRange] = useState("All");
   const [ageGroup, setAgeGroup] = useState("All");
   const [ratingFilter, setRatingFilter] = useState("All");
-  const [vendorFilter, setVendorFilter] = useState("All");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,7 +63,12 @@ function WorkshopsPage() {
       const vendorSnap = await getDocs(vendorQuery);
 
       const vendorList = vendorSnap.docs.reduce((acc, doc) => {
-        acc[doc.id] = doc.data() as Vendor;
+        const data = doc.data();
+        acc[doc.id] = {
+          id: doc.id,
+          displayName: data.displayName,
+          businessName: data.businessName,
+        };
         return acc;
       }, {} as Record<string, Vendor>);
 
@@ -158,7 +163,7 @@ function WorkshopsPage() {
   const filtered = workshops.filter((w) => {
     const matchesSearch = w.title.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === "All" || w.category === category;
-    const matchesVendor = vendorFilter === "All" || w.vendorId === vendorFilter;
+    // const matchesVendor = vendorFilter === "All" || w.vendorId === vendorFilter; // Removed
     const matchesLocation = location === "All" || w.location === location;
     const matchesAge = ageGroup === "All" || w.ageGroup === ageGroup;
 
@@ -178,7 +183,10 @@ function WorkshopsPage() {
     return (
       matchesSearch &&
       matchesCategory &&
-      matchesVendor &&
+      matchesSearch &&
+      matchesCategory &&
+      // matchesVendor && // Removed
+      matchesLocation &&
       matchesLocation &&
       matchesAge &&
       matchesPrice &&
@@ -214,22 +222,19 @@ function WorkshopsPage() {
           <option value="Technology">Technology</option>
           <option value="Cooking">Cooking</option>
           <option value="Sports">Sports</option>
+          <option value="Business">Business</option>
+          <option value="Health">Health</option>
+          <option value="Other">Other</option>
         </select>
 
-        <select value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)} className="px-4 py-3 bg-white/10 border border-white/10 rounded-xl">
-          <option value="All">Vendor</option>
-          {Object.entries(vendors).map(([id, vendor]) => (
-            <option key={id} value={id}>
-              {vendor.name}
-            </option>
-          ))}
-        </select>
+        {/* Removed Vendor Select */}
 
         <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="px-4 py-3 bg-white/10 border border-white/10 rounded-xl">
           <option value="All">Age Group</option>
-          <option value="Kids">Kids</option>
-          <option value="Teans">Teens</option>
-          <option value="Adults">Adults</option>
+          <option value="All Ages">All Ages</option>
+          <option value="Kids (5-12)">Kids (5-12)</option>
+          <option value="Teens (13-18)">Teens (13-18)</option>
+          <option value="Adults (18+)">Adults (18+)</option>
         </select>
 
         <select value={location} onChange={(e) => setLocation(e.target.value)} className="px-4 py-3 bg-white/10 border border-white/10 rounded-xl">
@@ -306,7 +311,7 @@ function WorkshopsPage() {
                   <h3 className="text-2xl font-semibold text-sky-300 mb-2">{w.title}</h3>
 
                   <p className="text-indigo-300 text-sm mb-2 italic">
-                    By {vendors[w.vendorId]?.name || "Unknown Vendor"}
+                    By {vendors[w.vendorId]?.businessName || vendors[w.vendorId]?.displayName || "Unknown Vendor"}
                   </p>
 
                   <p className="text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">{w.description}</p>
@@ -368,7 +373,7 @@ function WorkshopsPage() {
           <h3 className="text-2xl font-bold text-white mb-2">No workshops found</h3>
           <p className="text-gray-400">Try adjusting your filters or search query.</p>
           <button
-            onClick={() => { setSearch(""); setCategory("All"); setLocation("All"); setPriceRange("All"); setAgeGroup("All"); setRatingFilter("All"); setVendorFilter("All"); }}
+            onClick={() => { setSearch(""); setCategory("All"); setLocation("All"); setPriceRange("All"); setAgeGroup("All"); setRatingFilter("All"); }}
             className="mt-6 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition"
           >
             Clear Filters

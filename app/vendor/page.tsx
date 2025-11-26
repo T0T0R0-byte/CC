@@ -47,8 +47,14 @@ interface Participant {
   phoneNumber?: string;
   receiptUrl?: string;
   receiptBase64?: string;
-  status?: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "rejected" | "paid" | "failed";
   registrationId?: string;
+  details?: {
+    fullName: string;
+    age: string;
+    phone: string;
+    address: string;
+  };
 }
 
 interface Review {
@@ -147,7 +153,8 @@ const VendorDashboard: React.FC = () => {
                 phoneNumber: userData.phoneNumber,
                 receiptUrl: regData.receiptUrl,
                 status: regData.status || "pending",
-                registrationId: regDoc.id
+                registrationId: regDoc.id,
+                details: regData.participantDetails
               });
             }
           }
@@ -696,16 +703,26 @@ const VendorDashboard: React.FC = () => {
                       participantsMap[selectedWorkshop.id].map((p, i) => (
                         <tr key={i} className="hover:bg-white/5 transition">
                           <td className="px-6 py-4">
-                            <p className="font-bold text-white">{p.displayName}</p>
+                            <p className="font-bold text-white">{p.details?.fullName || p.displayName}</p>
                             <p className="text-xs text-gray-500">ID: {p.uid.slice(0, 6)}...</p>
+                            {p.details?.age && <p className="text-xs text-gray-400">Age: {p.details.age}</p>}
                           </td>
                           <td className="px-6 py-4">
-                            <p className="text-sm">{p.email}</p>
-                            <p className="text-xs text-gray-500">{p.phoneNumber || "N/A"}</p>
+                            <p className="text-sm mb-1">{p.email}</p>
+                            <p className="text-xs text-sky-400 font-semibold flex items-center gap-1">
+                              <i className="fa-solid fa-phone"></i>
+                              {p.details?.phone || p.phoneNumber || "N/A"}
+                            </p>
+                            {p.details?.address && (
+                              <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[150px]" title={p.details.address}>
+                                <i className="fa-solid fa-location-dot mr-1"></i>
+                                {p.details.address}
+                              </p>
+                            )}
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${p.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                              p.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${p.status === 'approved' || p.status === 'paid' ? 'bg-green-500/20 text-green-400' :
+                              p.status === 'rejected' || p.status === 'failed' ? 'bg-red-500/20 text-red-400' :
                                 'bg-yellow-500/20 text-yellow-400'
                               }`}>
                               {p.status ? p.status.toUpperCase() : "PENDING"}
@@ -729,36 +746,21 @@ const VendorDashboard: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              {p.status === 'pending' && (
-                                <>
-                                  <button
-                                    onClick={async () => {
-                                      if (!p.registrationId) return;
-                                      if (confirm("Approve this participant?")) {
-                                        await updateDoc(doc(db, "registrations", p.registrationId), { status: "approved" });
-                                        await fetchData();
-                                      }
-                                    }}
-                                    className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition"
-                                    title="Approve"
-                                  >
-                                    <i className="fa-solid fa-check"></i>
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (!p.registrationId) return;
-                                      if (confirm("Reject this participant?")) {
-                                        await updateDoc(doc(db, "registrations", p.registrationId), { status: "rejected" });
-                                        await fetchData();
-                                      }
-                                    }}
-                                    className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition"
-                                    title="Reject"
-                                  >
-                                    <i className="fa-solid fa-times"></i>
-                                  </button>
-                                </>
-                              )}
+                              <select
+                                value={p.status || "pending"}
+                                onChange={async (e) => {
+                                  if (!p.registrationId) return;
+                                  const newStatus = e.target.value;
+                                  // Optimistic update or just wait for fetch
+                                  await updateDoc(doc(db, "registrations", p.registrationId), { status: newStatus });
+                                  await fetchData();
+                                }}
+                                className="bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-sky-500 mr-2"
+                              >
+                                <option value="pending" className="bg-gray-900">Pending</option>
+                                <option value="paid" className="bg-gray-900">Paid</option>
+                                <option value="failed" className="bg-gray-900">Failed</option>
+                              </select>
                               <button
                                 onClick={() => {
                                   const element = document.createElement("a");

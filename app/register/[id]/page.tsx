@@ -37,6 +37,10 @@ export default function RegisterWorkshopPage() {
     // Form State
     const [receipt, setReceipt] = useState<File | null>(null);
     const [consent, setConsent] = useState(false);
+    const [fullName, setFullName] = useState("");
+    const [age, setAge] = useState("");
+    const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState("");
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -94,7 +98,12 @@ export default function RegisterWorkshopPage() {
         setRegistering(true);
 
         try {
-            await registerForWorkshop(workshop.id, user.uid, receipt);
+            await registerForWorkshop(workshop.id, user.uid, receipt, {
+                fullName,
+                age,
+                phone,
+                address
+            });
             setIsSuccess(true);
         } catch (error) {
             console.error("Registration failed:", error);
@@ -181,8 +190,6 @@ export default function RegisterWorkshopPage() {
                         {/* Price Header */}
                         <div className="flex items-end gap-2 mb-6">
                             <span className="text-4xl font-bold text-white">Rs. {workshop.price.toLocaleString()}</span>
-                            <span className="text-gray-400 mb-1 line-through text-sm">Rs. {(workshop.price * 1.2).toLocaleString()}</span>
-                            <span className="text-green-400 text-sm font-bold mb-1 ml-auto">20% OFF</span>
                         </div>
 
                         {/* Action Buttons */}
@@ -285,36 +292,85 @@ export default function RegisterWorkshopPage() {
                                 <>
                                     <h2 className="text-2xl font-bold text-white mb-6">Complete Registration</h2>
 
-                                    {/* Bank Details */}
-                                    <div className="bg-white/5 border border-white/10 p-4 rounded-xl mb-6">
-                                        <h4 className="text-sky-400 font-bold mb-3 text-sm uppercase tracking-wider">
-                                            Bank Transfer Details
-                                        </h4>
-                                        <div className="space-y-2 text-xs text-gray-300">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Bank:</span>
-                                                <span className="text-white">Commercial Bank</span>
+                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        {/* Participant Details */}
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Full Name</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={fullName}
+                                                    onChange={(e) => setFullName(e.target.value)}
+                                                    className="w-full px-4 py-3 bg-white/5 text-white rounded-xl border border-white/10 focus:border-sky-500 outline-none transition"
+                                                    placeholder="Enter your full name"
+                                                />
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Acc No:</span>
-                                                <span className="text-white font-mono">8001234567</span>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Age</label>
+                                                    <input
+                                                        type="number"
+                                                        required
+                                                        value={age}
+                                                        onChange={(e) => setAge(e.target.value)}
+                                                        className="w-full px-4 py-3 bg-white/5 text-white rounded-xl border border-white/10 focus:border-sky-500 outline-none transition"
+                                                        placeholder="Age"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Phone Number</label>
+                                                    <input
+                                                        type="tel"
+                                                        required
+                                                        value={phone}
+                                                        onChange={(e) => setPhone(e.target.value)}
+                                                        className="w-full px-4 py-3 bg-white/5 text-white rounded-xl border border-white/10 focus:border-sky-500 outline-none transition"
+                                                        placeholder="07X XXXXXXX"
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Branch:</span>
-                                                <span className="text-white">Colombo 07</span>
-                                            </div>
-                                            <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
-                                                <span className="text-gray-500">Amount:</span>
-                                                <span className="text-sky-400 font-bold">Rs. {workshop.price.toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex justify-between pt-2 mt-2 border-t border-white/10">
-                                                <span className="text-gray-500">Vendor Contact:</span>
-                                                <span className="text-white">{workshop.vendorPhone || "Not Available"}</span>
+                                            <div>
+                                                <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Address</label>
+                                                <textarea
+                                                    required
+                                                    value={address}
+                                                    onChange={(e) => setAddress(e.target.value)}
+                                                    className="w-full px-4 py-3 bg-white/5 text-white rounded-xl border border-white/10 focus:border-sky-500 outline-none transition h-24 resize-none"
+                                                    placeholder="Enter your address"
+                                                />
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        {/* Bank Details */}
+                                        <div className="bg-white/5 border border-white/10 p-4 rounded-xl mb-6">
+                                            <h4 className="text-sky-400 font-bold mb-3 text-sm uppercase tracking-wider">
+                                                Bank Transfer Details
+                                            </h4>
+                                            <div className="space-y-2 text-xs text-gray-300">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Bank:</span>
+                                                    <span className="text-white">Commercial Bank</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Acc No:</span>
+                                                    <span className="text-white font-mono">8001234567</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Branch:</span>
+                                                    <span className="text-white">Colombo 07</span>
+                                                </div>
+                                                <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
+                                                    <span className="text-gray-500">Amount:</span>
+                                                    <span className="text-sky-400 font-bold">Rs. {workshop.price.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between pt-2 mt-2 border-t border-white/10">
+                                                    <span className="text-gray-500">Vendor Contact:</span>
+                                                    <span className="text-white">{workshop.vendorPhone || "Not Available"}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Upload Receipt */}
                                         <div>
                                             <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Upload Receipt (PDF Only)</label>

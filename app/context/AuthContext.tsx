@@ -17,6 +17,7 @@ interface UserData {
     registeredWorkshops?: string[];
     socialLink?: string;
     businessIdUrl?: string;
+    businessName?: string;
 }
 
 interface AuthContextType {

@@ -39,6 +39,7 @@ export default function ProfilePage() {
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [socialLink, setSocialLink] = useState("");
+    const [businessName, setBusinessName] = useState("");
     const [businessIdUrl, setBusinessIdUrl] = useState("");
     const [photo, setPhoto] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState("");
@@ -66,6 +67,7 @@ export default function ProfilePage() {
             setName(userData.displayName || "");
             setPhone(userData.phoneNumber || "");
             setSocialLink(userData.socialLink || "");
+            setBusinessName(userData.businessName || "");
             setBusinessIdUrl(userData.businessIdUrl || "");
             setPhotoPreview(userData.photoURL || "");
 
@@ -163,7 +165,7 @@ export default function ProfilePage() {
                 displayName: name,
                 phoneNumber: phone,
                 photoURL: photoURL,
-                ...(userData?.role === 'vendor' && { socialLink })
+                ...(userData?.role === 'vendor' && { socialLink, businessName })
             });
 
             setIsEditing(false);
@@ -358,6 +360,20 @@ export default function ProfilePage() {
                                             )}
                                         </div>
                                         <div>
+                                            <label className="block text-gray-400 text-sm mb-1">Business Name</label>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={businessName}
+                                                    onChange={(e) => setBusinessName(e.target.value)}
+                                                    className="w-full px-4 py-2 bg-white/10 border border-white/10 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none text-white"
+                                                    placeholder="e.g. JollyWorkshops"
+                                                />
+                                            ) : (
+                                                <p className="text-xl text-white">{businessName || "Not set"}</p>
+                                            )}
+                                        </div>
+                                        <div>
                                             <label className="block text-gray-400 text-sm mb-1">Business ID</label>
                                             {businessIdUrl ? (
                                                 <a href={businessIdUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl text-sm hover:bg-white/20 transition">
@@ -400,9 +416,9 @@ export default function ProfilePage() {
                                                 <td className="px-6 py-4 text-sky-300">Rs. {ws.price.toLocaleString()}</td>
                                                 <td className="px-6 py-4">{new Date(ws.date).toLocaleDateString()}</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${ws.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                                                        ws.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                                            'bg-yellow-500/20 text-yellow-400'
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${ws.status === 'approved' || ws.status === 'paid' ? 'bg-green-500/20 text-green-400' :
+                                                            ws.status === 'rejected' || ws.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                                                                'bg-yellow-500/20 text-yellow-400'
                                                         }`}>
                                                         {ws.status ? ws.status.toUpperCase() : "PENDING"}
                                                     </span>
