@@ -20,6 +20,8 @@ interface Workshop {
     category: string;
     rating?: number;
     ratingCount?: number;
+    vendorId: string;
+    vendorPhone?: string;
 }
 
 export default function RegisterWorkshopPage() {
@@ -47,7 +49,17 @@ export default function RegisterWorkshopPage() {
             const docRef = doc(db, "workshops", id);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                setWorkshop({ id: docSnap.id, ...docSnap.data() } as Workshop);
+                const data = docSnap.data();
+                let vendorPhone = "";
+
+                if (data.vendorId) {
+                    const vendorSnap = await getDoc(doc(db, "users", data.vendorId));
+                    if (vendorSnap.exists()) {
+                        vendorPhone = vendorSnap.data().phoneNumber || "";
+                    }
+                }
+
+                setWorkshop({ id: docSnap.id, ...data, vendorPhone } as Workshop);
             }
             setLoading(false);
         };
@@ -64,8 +76,14 @@ export default function RegisterWorkshopPage() {
             return;
         }
 
-        if (!receipt) {
-            alert("Please upload the payment receipt.");
+        // Receipt is now optional for testing
+        // if (!receipt) {
+        //     alert("Please upload the payment receipt.");
+        //     return;
+        // }
+
+        if (receipt && receipt.size > 5 * 1024 * 1024) {
+            alert("Receipt file must be less than 5MB.");
             return;
         }
         if (!consent) {
@@ -249,6 +267,13 @@ export default function RegisterWorkshopPage() {
                                         </a>
                                     )}
 
+                                    <div className="bg-white/5 p-4 rounded-xl mb-6">
+                                        <p className="text-sm text-gray-400 mb-2">Need a refund?</p>
+                                        <p className="text-white font-bold">
+                                            Contact Vendor: <a href={`tel:${workshop.vendorPhone}`} className="text-sky-400 hover:underline">{workshop.vendorPhone || "Not Available"}</a>
+                                        </p>
+                                    </div>
+
                                     <button
                                         onClick={() => router.push('/workshops')}
                                         className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition"
@@ -282,24 +307,28 @@ export default function RegisterWorkshopPage() {
                                                 <span className="text-gray-500">Amount:</span>
                                                 <span className="text-sky-400 font-bold">Rs. {workshop.price.toLocaleString()}</span>
                                             </div>
+                                            <div className="flex justify-between pt-2 mt-2 border-t border-white/10">
+                                                <span className="text-gray-500">Vendor Contact:</span>
+                                                <span className="text-white">{workshop.vendorPhone || "Not Available"}</span>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <form onSubmit={handleSubmit} className="space-y-6">
                                         {/* Upload Receipt */}
                                         <div>
-                                            <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Upload Receipt</label>
+                                            <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Upload Receipt (PDF Only)</label>
                                             <div className="relative border border-dashed border-white/20 rounded-xl p-6 hover:border-sky-500/50 transition bg-white/5 text-center cursor-pointer group">
                                                 <input
                                                     type="file"
-                                                    accept="image/*,application/pdf"
+                                                    accept="application/pdf"
                                                     onChange={(e) => setReceipt(e.target.files?.[0] || null)}
                                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                 />
                                                 <div className="flex flex-col items-center gap-2">
-                                                    <i className="fa-solid fa-cloud-arrow-up text-3xl text-gray-500 group-hover:text-sky-400 transition"></i>
+                                                    <i className="fa-solid fa-file-pdf text-3xl text-gray-500 group-hover:text-red-400 transition"></i>
                                                     <p className="text-sm text-gray-400 group-hover:text-white transition truncate w-full px-2">
-                                                        {receipt ? receipt.name : "Click to upload payment proof"}
+                                                        {receipt ? receipt.name : "Click to upload payment proof (PDF)"}
                                                     </p>
                                                 </div>
                                             </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/firebase/firebaseConfig";
@@ -27,6 +27,9 @@ interface Workshop {
 interface RegisteredWorkshop extends Workshop {
     vendorName: string;
     vendorPhone: string;
+    rating?: number;
+    ratingCount?: number;
+    status?: string;
 }
 
 export default function ProfilePage() {
@@ -43,6 +46,12 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const [favorites, setFavorites] = useState<Workshop[]>([]);
     const [registeredWorkshops, setRegisteredWorkshops] = useState<RegisteredWorkshop[]>([]);
+
+    // Review Modal State
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedWorkshopForReview, setSelectedWorkshopForReview] = useState<RegisteredWorkshop | null>(null);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState("");
 
     // Filters
     const [search, setSearch] = useState("");
@@ -102,11 +111,28 @@ export default function ProfilePage() {
                     }
                 }
 
+                // Fetch Registration Status
+                let status = "pending";
+                try {
+                    const q = query(
+                        collection(db, "registrations"),
+                        where("workshopId", "==", wsId),
+                        where("userId", "==", user?.uid)
+                    );
+                    const regSnap = await getDocs(q);
+                    if (!regSnap.empty) {
+                        status = regSnap.docs[0].data().status || "pending";
+                    }
+                } catch (err) {
+                    console.error("Error fetching registration status:", err);
+                }
+
                 registered.push({
-                    id: wsDoc.id,
                     ...wsData,
+                    id: wsDoc.id,
                     vendorName,
                     vendorPhone,
+                    status
                 });
             }
         }
@@ -159,6 +185,46 @@ export default function ProfilePage() {
 
     const handleRefund = (vendorPhone: string) => {
         alert(`To request a refund, please contact the vendor at: ${vendorPhone}`);
+    };
+
+    const openReviewModal = (ws: RegisteredWorkshop) => {
+        setSelectedWorkshopForReview(ws);
+        setReviewRating(5);
+        setReviewComment("");
+        setReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async () => {
+        if (!selectedWorkshopForReview || !user) return;
+
+        try {
+            // 1. Add Review to 'reviews' collection
+            await addDoc(collection(db, "reviews"), {
+                workshopId: selectedWorkshopForReview.id,
+                userId: user.uid,
+                userName: userData?.displayName || "Anonymous",
+                rating: reviewRating,
+                comment: reviewComment,
+                createdAt: new Date().toISOString() // Use ISO string for easier sorting/display
+            });
+
+            // 2. Update Workshop Average Rating
+            const newRatingCount = (selectedWorkshopForReview.ratingCount || 0) + 1;
+            const currentTotal = (selectedWorkshopForReview.rating || 0) * (selectedWorkshopForReview.ratingCount || 0);
+            const newRating = (currentTotal + reviewRating) / newRatingCount;
+
+            await updateDoc(doc(db, "workshops", selectedWorkshopForReview.id), {
+                rating: newRating,
+                ratingCount: newRatingCount
+            });
+
+            alert("Thank you for your review!");
+            setReviewModalOpen(false);
+            fetchRegisteredWorkshops(); // Refresh list
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            alert("Failed to submit review.");
+        }
     };
 
     // Filter Logic
@@ -322,6 +388,7 @@ export default function ProfilePage() {
                                             <th className="px-6 py-4">Vendor</th>
                                             <th className="px-6 py-4">Price</th>
                                             <th className="px-6 py-4">Date</th>
+                                            <th className="px-6 py-4">Status</th>
                                             <th className="px-6 py-4">Action</th>
                                         </tr>
                                     </thead>
@@ -333,11 +400,19 @@ export default function ProfilePage() {
                                                 <td className="px-6 py-4 text-sky-300">Rs. {ws.price.toLocaleString()}</td>
                                                 <td className="px-6 py-4">{new Date(ws.date).toLocaleDateString()}</td>
                                                 <td className="px-6 py-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${ws.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                                                        ws.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                                            'bg-yellow-500/20 text-yellow-400'
+                                                        }`}>
+                                                        {ws.status ? ws.status.toUpperCase() : "PENDING"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
                                                     <button
-                                                        onClick={() => handleRefund(ws.vendorPhone)}
-                                                        className="text-red-400 hover:text-red-300 text-sm font-semibold hover:underline"
+                                                        onClick={() => openReviewModal(ws)}
+                                                        className="px-4 py-2 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 rounded-lg text-sm font-semibold transition flex items-center gap-2"
                                                     >
-                                                        Request Refund
+                                                        <i className="fa-solid fa-star"></i> Rate & Review
                                                     </button>
                                                 </td>
                                             </tr>
@@ -406,7 +481,13 @@ export default function ProfilePage() {
                                             className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition group"
                                         >
                                             <div className="relative h-40 mb-4 overflow-hidden rounded-xl">
-                                                <img src={w.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                                                {w.imageUrl ? (
+                                                    <img src={w.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-white/10 flex items-center justify-center">
+                                                        <i className="fa-solid fa-image text-gray-500"></i>
+                                                    </div>
+                                                )}
                                                 <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-xs text-white">
                                                     {w.category}
                                                 </div>
@@ -436,6 +517,58 @@ export default function ProfilePage() {
                         )}
                     </div>
                 )}
+                {/* Review Modal */}
+                <AnimatePresence>
+                    {reviewModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="bg-[#0f172a] border border-white/20 p-8 rounded-3xl w-full max-w-md shadow-2xl"
+                            >
+                                <h3 className="text-2xl font-bold text-white mb-6 text-center">Rate & Review</h3>
+
+                                <div className="flex justify-center gap-2 mb-6">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            onClick={() => setReviewRating(star)}
+                                            className="text-3xl transition hover:scale-110 focus:outline-none"
+                                        >
+                                            <i className={`${star <= reviewRating ? "fa-solid text-yellow-400" : "fa-regular text-gray-600"} fa-star`}></i>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-gray-400 text-sm mb-2">Your Review</label>
+                                    <textarea
+                                        value={reviewComment}
+                                        onChange={(e) => setReviewComment(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white/5 text-white rounded-xl border border-white/10 focus:border-sky-500 outline-none transition h-32 resize-none"
+                                        placeholder="Share your experience..."
+                                    ></textarea>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setReviewModalOpen(false)}
+                                        className="flex-1 py-3 text-gray-400 hover:text-white transition font-semibold bg-white/5 rounded-xl hover:bg-white/10"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleSubmitReview}
+                                        className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-indigo-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)] hover:scale-105 transition"
+                                    >
+                                        Submit Review
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

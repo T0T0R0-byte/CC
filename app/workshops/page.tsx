@@ -16,6 +16,7 @@ interface Workshop {
   price: number;
   category: string;
   imageUrl: string;
+  imageBase64?: string;
   date: string;
   vendorId: string;
   location: string;
@@ -73,13 +74,27 @@ function WorkshopsPage() {
     fetchData();
   }, []);
 
+  const [localFavorites, setLocalFavorites] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (userData?.favorites) {
+      setLocalFavorites(userData.favorites);
+    }
+  }, [userData]);
+
+  // ... (fetchData effect remains same)
+
   const toggleFavorite = async (workshopId: string) => {
-    if (!user || !userData) {
+    if (!user) {
       alert("Please login to add to favorites.");
       return;
     }
 
-    const isFav = userData.favorites?.includes(workshopId);
+    const isFav = localFavorites.includes(workshopId);
+
+    // Optimistic Update
+    setLocalFavorites(prev => isFav ? prev.filter(id => id !== workshopId) : [...prev, workshopId]);
+
     const userRef = doc(db, "users", user.uid);
 
     try {
@@ -87,20 +102,15 @@ function WorkshopsPage() {
         await updateDoc(userRef, {
           favorites: arrayRemove(workshopId),
         });
-        // Optimistic update (or wait for context refresh, but context refresh might be slow)
-        // For now, we rely on page reload or context update. 
-        // To make it instant, we'd need to update local state or force context refresh.
-        // Since userData comes from context, we can't mutate it directly.
-        // We'll just alert or show toast.
       } else {
         await updateDoc(userRef, {
           favorites: arrayUnion(workshopId),
         });
       }
-      // Trigger a reload of user data if possible, or just reload page for now to reflect changes
-      window.location.reload();
     } catch (error) {
       console.error("Error toggling favorite:", error);
+      // Revert on error
+      setLocalFavorites(prev => isFav ? [...prev, workshopId] : prev.filter(id => id !== workshopId));
     }
   };
 
@@ -178,6 +188,7 @@ function WorkshopsPage() {
 
   return (
     <main className="min-h-screen px-6 py-28 text-gray-100">
+      {/* ... (Header and Filters remain same) */}
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -187,6 +198,7 @@ function WorkshopsPage() {
       </motion.h1>
 
       <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl mb-16 shadow-[0_0_25px_rgba(56,189,248,0.15)] flex flex-wrap justify-center gap-4">
+        {/* ... (Inputs and Selects remain same - I will just copy them to be safe or use ... if I can but I must replace the whole block if I use replace_file_content) */}
         <input
           type="text"
           placeholder="Search workshops..."
@@ -248,13 +260,22 @@ function WorkshopsPage() {
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-400">Loading workshops...</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <div key={n} className="bg-white/5 border border-white/10 rounded-3xl p-6 h-[500px] animate-pulse">
+              <div className="w-full h-56 bg-white/10 rounded-2xl mb-5"></div>
+              <div className="h-8 bg-white/10 rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-white/10 rounded w-1/2 mb-4"></div>
+              <div className="h-20 bg-white/10 rounded w-full mb-4"></div>
+            </div>
+          ))}
+        </div>
       ) : (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12">
           <AnimatePresence>
             {filtered.map((w, i) => {
               const isRegistered = userData?.registeredWorkshops?.includes(w.id);
-              const isFavorite = userData?.favorites?.includes(w.id);
+              const isFavorite = localFavorites.includes(w.id);
               const userRating = w.ratings?.[user?.uid || ""] || 0;
 
               return (
@@ -262,18 +283,25 @@ function WorkshopsPage() {
                   key={w.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: i * 0.05 }}
-                  className="group relative bg-white/5 border border-white/10 backdrop-blur-xl rounded-3xl p-6 hover:scale-[1.03] hover:shadow-[0_0_30px_rgba(56,189,248,0.25)] transition-all"
+                  className="group relative bg-white/5 border border-white/10 backdrop-blur-xl rounded-3xl p-6 hover:scale-[1.03] hover:shadow-[0_0_30px_rgba(56,189,248,0.25)] transition-all flex flex-col"
                 >
                   {/* Favorite Button */}
                   <button
                     onClick={() => toggleFavorite(w.id)}
-                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition"
+                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition hover:scale-110"
                   >
-                    <i className={`fa-${isFavorite ? "solid" : "regular"} fa-heart text-red-500`}></i>
+                    <i className={`fa-${isFavorite ? "solid" : "regular"} fa-heart text-red-500 text-xl transition-all ${isFavorite ? "scale-110" : ""}`}></i>
                   </button>
 
-                  <img src={w.imageUrl} className="w-full h-56 object-cover rounded-2xl mb-5 group-hover:scale-110 transition-all duration-700" />
+                  {w.imageBase64 || w.imageUrl ? (
+                    <img src={w.imageBase64 || w.imageUrl} className="w-full h-56 object-cover rounded-2xl mb-5 group-hover:scale-105 transition-all duration-700" />
+                  ) : (
+                    <div className="w-full h-56 bg-white/5 rounded-2xl mb-5 flex items-center justify-center border border-white/10">
+                      <i className="fa-solid fa-image text-4xl text-gray-500"></i>
+                    </div>
+                  )}
 
                   <h3 className="text-2xl font-semibold text-sky-300 mb-2">{w.title}</h3>
 
@@ -281,16 +309,16 @@ function WorkshopsPage() {
                     By {vendors[w.vendorId]?.name || "Unknown Vendor"}
                   </p>
 
-                  <p className="text-gray-400 text-sm mb-4 line-clamp-3">{w.description}</p>
+                  <p className="text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">{w.description}</p>
 
                   <div className="flex justify-between text-gray-300 text-sm mb-4">
-                    <span>{new Date(w.date).toLocaleDateString()}</span>
-                    <span>{w.location}</span>
+                    <span className="flex items-center gap-2"><i className="fa-regular fa-calendar"></i> {new Date(w.date).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-2"><i className="fa-solid fa-location-dot"></i> {w.location}</span>
                   </div>
 
                   <div className="flex justify-between text-gray-300 text-sm mb-4">
-                    <span>Price: Rs. {Number(w.price).toLocaleString("en-LK")}</span>
-                    <span>Age: {w.ageGroup}</span>
+                    <span className="font-bold text-white">Rs. {Number(w.price).toLocaleString("en-LK")}</span>
+                    <span className="px-2 py-0.5 bg-white/10 rounded text-xs">{w.ageGroup}</span>
                   </div>
 
                   <div className="flex items-center justify-between mb-4">
@@ -304,14 +332,14 @@ function WorkshopsPage() {
                   </div>
 
                   {isRegistered ? (
-                    <div className="mt-4">
+                    <div className="mt-auto pt-4 border-t border-white/10">
                       <p className="text-center text-sm text-gray-300 mb-2">Rate this workshop:</p>
                       <div className="flex justify-center gap-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}
                             onClick={() => handleRate(w.id, star)}
-                            className={`text-2xl transition ${star <= userRating ? "text-yellow-400" : "text-gray-600 hover:text-yellow-200"}`}
+                            className={`text-2xl transition hover:scale-110 ${star <= userRating ? "text-yellow-400" : "text-gray-600 hover:text-yellow-200"}`}
                           >
                             ★
                           </button>
@@ -322,9 +350,9 @@ function WorkshopsPage() {
                     <Link
                       href={`/register/${w.id}`}
                       onClick={(e) => handleRegisterClick(e, w.id)}
-                      className="block mt-4 py-2 text-center bg-gradient-to-r from-sky-500 to-indigo-500 rounded-xl font-semibold hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] transition"
+                      className="block mt-auto py-3 text-center bg-gradient-to-r from-sky-500 to-indigo-500 rounded-xl font-bold text-white hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-[1.02] transition"
                     >
-                      Register
+                      Register Now
                     </Link>
                   )}
                 </motion.div>
@@ -335,7 +363,17 @@ function WorkshopsPage() {
       )}
 
       {!loading && filtered.length === 0 && (
-        <p className="text-center text-gray-400 mt-10">No workshops found.</p>
+        <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
+          <i className="fa-solid fa-magnifying-glass text-6xl text-gray-600 mb-6"></i>
+          <h3 className="text-2xl font-bold text-white mb-2">No workshops found</h3>
+          <p className="text-gray-400">Try adjusting your filters or search query.</p>
+          <button
+            onClick={() => { setSearch(""); setCategory("All"); setLocation("All"); setPriceRange("All"); setAgeGroup("All"); setRatingFilter("All"); setVendorFilter("All"); }}
+            className="mt-6 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition"
+          >
+            Clear Filters
+          </button>
+        </div>
       )}
     </main>
   );

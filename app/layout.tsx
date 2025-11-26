@@ -1,6 +1,6 @@
 import "./globals.css";
 import Link from "next/link";
-import CosmicBackground from "./components/CosmicBackground";
+import CosmicBackground from "@/components/CosmicBackground";
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
 import FirebaseSetupHelp from "./components/FirebaseSetupHelp";

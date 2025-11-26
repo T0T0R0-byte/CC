@@ -23,6 +23,16 @@ export default function RegisterPage() {
     const [socialLink, setSocialLink] = useState("");
     const [businessIdFile, setBusinessIdFile] = useState<File | null>(null);
 
+    // Helper to convert File to Base64
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -36,16 +46,45 @@ export default function RegisterPage() {
                 }
             }
 
+            console.log("Registering user:", email);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+            console.log("User created:", user.uid);
 
             await updateProfile(user, { displayName: name });
 
             let businessIdUrl = "";
+            let businessIdBase64 = "";
+
             if (role === "vendor" && businessIdFile) {
-                const storageRef = ref(storage, `business_ids/${user.uid}-${Date.now()}.pdf`);
-                await uploadBytes(storageRef, businessIdFile);
-                businessIdUrl = await getDownloadURL(storageRef);
+                console.log("Processing Business ID...", businessIdFile.name);
+
+                // If file is small (< 700KB), store as Base64 in Firestore
+                if (businessIdFile.size < 700 * 1024) {
+                    console.log("File is small, converting to Base64...");
+                    try {
+                        businessIdBase64 = await fileToBase64(businessIdFile);
+                        console.log("Converted to Base64.");
+                    } catch (err) {
+                        console.error("Base64 conversion failed:", err);
+                    }
+                }
+
+                // If not converted, try Storage
+                if (!businessIdBase64) {
+                    try {
+                        console.log("Uploading Business ID to Storage...");
+                        const sanitizedName = businessIdFile.name.replace(/[^a-zA-Z0-9.]/g, "_");
+                        const storageRef = ref(storage, `business_ids/${user.uid}-${Date.now()}-${sanitizedName}`);
+
+                        await uploadBytes(storageRef, businessIdFile);
+                        businessIdUrl = await getDownloadURL(storageRef);
+                        console.log("Business ID uploaded:", businessIdUrl);
+                    } catch (storageErr: any) {
+                        console.error("Storage Error:", storageErr);
+                        throw new Error(`Failed to upload Business ID: ${storageErr.message || "Network error"}. Please try a smaller file (under 700KB).`);
+                    }
+                }
             }
 
             // Create user document in Firestore
@@ -62,12 +101,15 @@ export default function RegisterPage() {
                     phoneNumber,
                     socialLink,
                     businessIdUrl,
+                    businessIdBase64,
                     isVerified: false // Vendors might need approval
                 })
             });
 
+            console.log("User document created.");
             router.push("/");
         } catch (err: any) {
+            console.error("Registration Error:", err);
             setError(err.message);
         } finally {
             setLoading(false);

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
-    const { user, userData, logout } = useAuth();
+    const { user, userData, logout, loading } = useAuth();
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -42,7 +43,9 @@ export default function Navbar() {
                         </Link>
                     ))}
 
-                    {user ? (
+                    {loading ? (
+                        <div className="w-20 h-8 bg-white/5 rounded-full animate-pulse"></div>
+                    ) : user ? (
                         <div className="relative group">
                             <button className="flex items-center gap-2 text-gray-300 hover:text-white transition">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 p-[2px]">
@@ -56,7 +59,7 @@ export default function Navbar() {
                                         )}
                                     </div>
                                 </div>
-                                <span>{userData?.displayName || "User"}</span>
+                                <span>{userData?.displayName || user.email?.split('@')[0] || "User"}</span>
                             </button>
 
                             {/* Dropdown */}
@@ -95,29 +98,41 @@ export default function Navbar() {
                 </button>
             </nav>
 
-            {/* Mobile Menu (Basic implementation) */}
-            {isMenuOpen && (
-                <div className="md:hidden mt-4 flex flex-col gap-4 text-center pb-4">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.name}
-                            href={item.path}
-                            onClick={() => setIsMenuOpen(false)}
-                            className="text-gray-300 hover:text-white"
-                        >
-                            {item.name}
-                        </Link>
-                    ))}
-                    {user ? (
-                        <>
-                            <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white">Profile</Link>
-                            <button onClick={() => { logout(); setIsMenuOpen(false); }} className="text-red-400">Logout</button>
-                        </>
-                    ) : (
-                        <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-white">Login</Link>
-                    )}
-                </div>
-            )}
+            {/* Mobile Menu */}
+            <AnimatePresence>
+                {isMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="md:hidden mt-4 overflow-hidden"
+                    >
+                        <div className="flex flex-col gap-4 text-center pb-4 border-t border-white/10 pt-4">
+                            {navItems.map((item) => (
+                                <Link
+                                    key={item.name}
+                                    href={item.path}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="text-gray-300 hover:text-white transition"
+                                >
+                                    {item.name}
+                                </Link>
+                            ))}
+                            {user ? (
+                                <>
+                                    <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition">Profile</Link>
+                                    {userData?.role === "vendor" && (
+                                        <Link href="/vendor" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white transition">Vendor Dashboard</Link>
+                                    )}
+                                    <button onClick={() => { logout(); setIsMenuOpen(false); }} className="text-red-400 hover:text-red-300 transition">Logout</button>
+                                </>
+                            ) : (
+                                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-white font-semibold">Login</Link>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </header>
     );
 }
